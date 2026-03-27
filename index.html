@@ -405,8 +405,8 @@
         }
         obstacles.push(obs);
         // Distance gets shorter as speed increases
-        const minDist = Math.max(150, 280 - speed * 8);
-        const range = Math.max(80, 250 - speed * 10);
+        const minDist = Math.max(250, 420 - speed * 8);
+        const range = Math.max(150, 350 - speed * 10);
         nextObstacleDistance = minDist + Math.random() * range;
     }
 
