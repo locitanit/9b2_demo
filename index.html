@@ -93,7 +93,7 @@
     const JUMP_FORCE = -12;
     const INITIAL_SPEED = 5;
     const MAX_SPEED = 16;
-    const BOSS_SCORE = 300;
+    const BOSS_INTERVAL = 200;
 
     // --- Game state ---
     let gameStarted = false;
@@ -104,6 +104,8 @@
     let speed = INITIAL_SPEED;
     let frameCount = 0;
     let gameMode = 'running'; // 'running' or 'boss'
+    let nextBossScore = BOSS_INTERVAL;
+    let bossesDefeated = 0;
 
     // --- Dino ---
     const dino = {
@@ -284,8 +286,8 @@
         ctx.fillText('B O S S   L E G Y Ő Z V E !', canvas.width / 2, 80);
         ctx.font = '16px Courier New';
         ctx.fillStyle = '#535353';
-        ctx.fillText('Pont: ' + Math.floor(score), canvas.width / 2, 110);
-        ctx.fillText('Nyomj SPACE-t vagy koppints az újrakezdéshez', canvas.width / 2, 140);
+        ctx.fillText('Legyőzött bossok: ' + bossesDefeated, canvas.width / 2, 110);
+        ctx.fillText('Nyomj SPACE-t vagy koppints a folytatáshoz!', canvas.width / 2, 140);
     }
 
     function drawStartScreen() {
@@ -405,8 +407,8 @@
         }
         obstacles.push(obs);
         // Distance gets shorter as speed increases
-        const minDist = Math.max(250, 420 - speed * 8);
-        const range = Math.max(150, 350 - speed * 10);
+        const minDist = Math.max(350, 550 - speed * 8);
+        const range = Math.max(200, 450 - speed * 10);
         nextObstacleDistance = minDist + Math.random() * range;
     }
 
@@ -419,10 +421,11 @@
         dino.jumping = false;
         dino.ducking = false;
         dino.jumpCount = 0;
+        const bossHp = BOSS_MAX_HP + bossesDefeated * 10;
         boss = {
             x: canvas.width + 20,
-            hp: BOSS_MAX_HP,
-            maxHp: BOSS_MAX_HP,
+            hp: bossHp,
+            maxHp: bossHp,
             hitFlash: 0,
             entering: true
         };
@@ -482,7 +485,7 @@
             speed = Math.min(INITIAL_SPEED + score * 0.025, MAX_SPEED);
 
             // Check for boss trigger
-            if (score >= BOSS_SCORE) {
+            if (score >= nextBossScore) {
                 startBossFight();
                 return;
             }
@@ -541,6 +544,7 @@
                     bullets.splice(i, 1);
                     if (boss.hp <= 0) {
                         gameWon = true;
+                        bossesDefeated++;
                         if (Math.floor(score) > highScore) highScore = Math.floor(score);
                     }
                     continue;
@@ -613,6 +617,20 @@
     // ============================
     //  RESET
     // ============================
+    function resumeAfterBoss() {
+        gameWon = false;
+        gameMode = 'running';
+        nextBossScore = score + BOSS_INTERVAL;
+        bullets = [];
+        boss = null;
+        obstacles = [];
+        nextObstacleDistance = 400;
+        holdingJump = false;
+        btnShoot.style.display = 'none';
+        btnDuck.style.display = '';
+        btnJump.style.display = '';
+    }
+
     function resetGame() {
         gameOver = false;
         gameWon = false;
@@ -628,9 +646,10 @@
         dino.jumping = false;
         dino.ducking = false;
         dino.jumpCount = 0;
-        nextObstacleDistance = 200;
+        nextObstacleDistance = 400;
+        nextBossScore = BOSS_INTERVAL;
+        bossesDefeated = 0;
         holdingJump = false;
-        // Reset mobile buttons
         btnShoot.style.display = 'none';
         btnDuck.style.display = '';
         btnJump.style.display = '';
@@ -641,7 +660,8 @@
     // ============================
     function handleAction() {
         if (!gameStarted) { gameStarted = true; return; }
-        if (gameOver || gameWon) { resetGame(); return; }
+        if (gameOver) { resetGame(); return; }
+        if (gameWon) { resumeAfterBoss(); return; }
 
         if (gameMode === 'boss') {
             shoot();
@@ -729,7 +749,8 @@
     btnShoot.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (!gameStarted) { gameStarted = true; return; }
-        if (gameOver || gameWon) { resetGame(); return; }
+        if (gameOver) { resetGame(); return; }
+        if (gameWon) { resumeAfterBoss(); return; }
         shoot();
     }, { passive: false });
 
@@ -737,7 +758,8 @@
     canvas.addEventListener('touchstart', (e) => {
         e.preventDefault();
         if (!gameStarted) { gameStarted = true; return; }
-        if (gameOver || gameWon) { resetGame(); return; }
+        if (gameOver) { resetGame(); return; }
+        if (gameWon) { resumeAfterBoss(); return; }
         if (gameMode === 'boss') { shoot(); }
     }, { passive: false });
 
